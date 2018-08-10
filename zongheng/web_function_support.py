@@ -20,9 +20,9 @@ DEFAULT_BOOK_FIRST_CHAPTER = PAGE('first_chapter', 'http://book.zongheng.com/cha
 
 
 # book_name, author_name, recommend_book_name, book_description
-COMMENT_LIST = ['{book_name}这本书写的真好，看了几章就被深深地吸引了，于是立马收藏点赞。各位书友如果有空也可以看一看『{recommend_book_name}』--{book_description}',
+COMMENT_LIST = ['{book_name}这本书写的真好，看了几章就被深深地吸引了，于是立马签到点赞。各位书友如果有空也可以看一看『{recommend_book_name}』--{book_description}',
                 '前排支持{author_name}大大，『{recommend_book_name}』--{book_description}， 创作不易，希望大家支持！',
-                '被{book_name}的文笔吸引，特来签到支持收藏！，顺带携作品『{recommend_book_name}』前来拜访，望{author_name}大大回访、收藏、点评！！',
+                '被{book_name}的文笔吸引，特来签到支持！，顺带携作品『{recommend_book_name}』前来拜访，望{author_name}大大回访、收藏、点评！！',
                 '签到支持，看望{author_name}大大。{book_name}的书友们也请多多支持『{recommend_book_name}』--{book_description}']
 
 

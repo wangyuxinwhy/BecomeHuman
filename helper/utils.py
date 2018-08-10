@@ -13,6 +13,8 @@ from datetime import datetime
 
 import requests
 
+from helper.file_manager import Bucket
+from __version__ import __version__
 from config import YIMA_TOKEN, YIMA_ITEM_ID
 
 
@@ -112,5 +114,18 @@ def get_register_info(phone_num):
 
     return password, nickname
 
+
+def update_config_to_aliyun():
+    b = Bucket()
+    obj_name = 'BecomeHuman/config_v_{}.py'.format(__version__)
+    b.put_file(obj_name, '../config.py')
+
+
+def get_config_from_aliyun():
+    b = Bucket()
+    obj_name = 'BecomeHuman/config_v_{}.py'.format(__version__)
+    b.get_file(obj_name, '../config.py')
+
+
 if __name__ == '__main__':
-    print(get_proxy())
+    update_config_to_aliyun()

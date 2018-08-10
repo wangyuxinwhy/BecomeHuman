@@ -87,4 +87,4 @@ def api_book_comment(book_id):
 
 
 if __name__ == '__main__':
-    print('独步逍遥0203' in api_book_comment(757864))
+    pass

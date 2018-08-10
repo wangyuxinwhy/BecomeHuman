@@ -64,7 +64,7 @@ class CheckCookies(Check):
             return True
 
 
-class CheckCommend(Check):
+class CheckRecomment(Check):
     description = '检验推荐票'
 
     def check(self):

@@ -21,8 +21,9 @@ from web_user import User, get_random_user, get_sequence_user
 from helper.log import setup_logging
 from helper.utils import is_today, get_proxy
 from zongheng.schdule_support import get_random_comment, get_book_from_id, get_random_book_id, get_random_chapter_id
-from zongheng.web_function import Login, LoginWithCookies, ReadBook, CollectBook, BookComment, ChapterComment, Register
+from zongheng.web_function import Login, LoginWithCookies, ReadBook, CollectBook, BookComment, ChapterComment, Register, RecommendBook
 from zongheng.web_function_support import FUNCTION_CHAPTER_COMMENT_CONFIG, FUNCTION_BOOK_COMMENT_CONFIG
+from zongheng.api import api_user_info
 from config import NOVEL_TITLE, NOVEL_DESCRIPTION, WEBDRIVER_HEADLESS
 from __version__ import __title__, __version__, __author__
 
@@ -57,13 +58,18 @@ def daily_work(headless=WEBDRIVER_HEADLESS):
     :return:
     """
     try:
-        user = User(get_sequence_user())
+        # user = User(get_sequence_user())
+        user = User('18774448445')
         logger.info('{} ver: {} author: {} worker: {} START DAILY WORK'
                     .format(__title__, __version__, __author__, user.nickname))
 
         with Web(headless=headless) as chrome:
 
-            if user.last_work_time and user.cookies:
+            user_recomment_num = api_user_info(user, 'recomment')
+
+            if user_recomment_num:
+                login = Login(chrome, user)
+            elif user.last_work_time and user.cookies:
                 if is_today(user.last_work_time):
                     login = LoginWithCookies(chrome, user)
                 else:
@@ -77,6 +83,11 @@ def daily_work(headless=WEBDRIVER_HEADLESS):
             if user.is_collect == '0':
                 func_collect = CollectBook(chrome, user)
                 func_collect.run()
+
+            # 推荐
+            if user_recomment_num:
+                func_recommend = RecommendBook(chrome, user)
+                func_recommend.run()
 
             # 阅读
             func_read = ReadBook(chrome, user)
@@ -183,4 +194,4 @@ def register_user():
 if __name__ == '__main__':
     # app.start()
     # register_user()
-    pass
+    daily_work(headless=False)

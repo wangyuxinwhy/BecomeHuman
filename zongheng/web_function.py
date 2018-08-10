@@ -18,7 +18,7 @@ from exceptions import ContextError
 from database import get_user_action_collections, get_user_collections
 from zongheng.check import *
 from zongheng.web_function_support import *
-from zongheng.api import api_book_comment, api_book_chapter_comment
+from zongheng.api import api_book_comment, api_book_chapter_comment, api_user_info
 from zongheng.check import get_exception_info_from_checklist
 from helper.identify_code import identify_code_from_url, identify_code_from_bytes
 from helper.utils import get_phone_num, get_phone_message, get_register_info
@@ -389,7 +389,8 @@ class RecommendBook(WebFunction):
 
     def __init__(self, web, user, config=FUNCTION_BOOK_RECOMMEND_CONFIG):
         super().__init__(web, user, config)
-        self.checklist = [CheckLogin, CheckCookies, CheckCommend]
+        self.checklist = [CheckLogin, CheckCookies, CheckRecomment]
+        self.recomment_num = int(api_user_info(self.user, 'recomment'))
 
     def concrete_run(self):
         self.web.web_driver.get(self.config['page_pattern'].pattern.format(self.config['book_id']))
@@ -401,6 +402,13 @@ class RecommendBook(WebFunction):
         ensure.click()
         self.info['info']['book_id'] = self.config['book_id']
 
+    def is_success(self):
+        recomment_num_after = api_user_info(self.user, 'recomment')
+        if int(recomment_num_after) < self.recomment_num:
+            return True
+
+    def function_failed(self):
+        pass
 
 class NewsMemberTicketComment(WebFunction):
 

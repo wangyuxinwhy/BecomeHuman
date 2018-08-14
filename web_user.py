@@ -5,13 +5,15 @@
 # @File    : web_user.py
 # @Project : BecomeHuman
 
+from collections import Counter
+
 import pandas as pd
 import random
 import numpy as np
 from numpy.random import multinomial
 from datetime import datetime
 
-from database import get_user_collections, REDIS_CLIENT
+from database import get_user_collections, get_user_action_collections, REDIS_CLIENT
 from exceptions import UserFormatError
 
 USER_FIELD = {'username': None,
@@ -209,6 +211,13 @@ def get_sequence_user():
         index = 0
     REDIS_CLIENT.set('worker_index', index)
     return str(user_list[index]['username'])
+
+
+def get_user_action_stat(timestamp_start, timestamp_end, status=1):
+    col = get_user_action_collections()
+    action_list = col.find({'start_time': {'$gt': timestamp_start, '$lt': timestamp_end}, 'status': status}, {'_id': 0})
+    counter = Counter(map(lambda x: x['action'], action_list))
+    return counter
 
 
 def user_refresh():

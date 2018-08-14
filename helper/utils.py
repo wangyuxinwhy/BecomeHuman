@@ -10,12 +10,17 @@ import time
 import hashlib
 import random
 from datetime import datetime
+import datetime as dt
 
 import requests
+from lxml.html import fromstring
+import simplejson as json
 
 from helper.file_manager import Bucket
-from __version__ import __version__
+from __version__ import __version__, __author__, __title__
 from config import YIMA_TOKEN, YIMA_ITEM_ID
+from web_user import get_user_action_stat
+from exceptions import RequestError
 
 
 def get_proxy(test_url='http://www.zongheng.com/'):
@@ -59,6 +64,14 @@ def is_today(timestamp):
     day2 = datetime.strftime(datetime.today(), '%Y-%m-%d')
     if day1 == day2:
         return True
+
+
+def today_timestamp_range():
+    today = datetime.today()
+    start = int(datetime.timestamp(datetime(today.year, today.month, today.day)))
+    tomorrow = today + dt.timedelta(days=1)
+    end = int(datetime.timestamp(datetime(tomorrow.year, tomorrow.month, tomorrow.day)))
+    return (start, end)
 
 
 def get_phone_num():
@@ -127,5 +140,70 @@ def get_config_from_aliyun():
     b.get_file(obj_name, '../config.py')
 
 
+def get_yima_account_info():
+    """
+    易码平台账户信息，关键字段 (余额, "Balance")
+    :return: dict
+    """
+    params = {
+        'action': 'getaccountinfo',
+        'token': YIMA_TOKEN,
+        'format': 1
+    }
+    url = 'http://api.fxhyd.cn/UserInterface.aspx'
+    resp = requests.get(url, params=params).text
+    status, data = resp.split('|')
+    if status == 'success':
+        data = json.loads(data)
+        return {'account_type': '易码', 'Balance': data['Balance']}
+    else:
+        raise RequestError('request Failed')
+
+
+def get_chaojiying_account_info():
+    url = 'http://www.chaojiying.com/user/'
+    headers = {
+        'Cookie': 'PHPSESSID=nph5rfgdi8bapttepuitcd1124; __51cke__=; __tins__16851773=%7B%22sid%22%3A%201534229980189%2C%20%22vd%22%3A%208%2C%20%22expires%22%3A%201534231828194%7D; __51laig__=8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'
+    }
+    resp = requests.get(url, headers=headers)
+    html = fromstring(resp.content)
+    balance = html.xpath('/html/body/div[3]/div[2]/div[1]/div[1]/span')[0].text
+    return {'account_type': '超级鹰', 'Balance': balance}
+
+
+def get_zhimahttp_account_info():
+    url = 'http://web.http.cnapi.cc/index/index/get_my_balance?neek=49624&appkey=9a6e35aae3eccaedd72119c1a3e888b6'
+    resp = requests.get(url).json()
+    return {'account_type': '芝麻HTTP', 'Balance': resp['data']['balance']}
+
+
+def get_project_info():
+    title = __title__
+    version = __version__
+    author = __author__
+    balance = [get_chaojiying_account_info(), get_zhimahttp_account_info(), get_yima_account_info()]
+    start, end = today_timestamp_range()
+    user_action_success = get_user_action_stat(start, end, 1)
+    user_action_failed = get_user_action_stat(start, end, 0)
+    info = """==== Project Info ====\n
+>>>> Base Info <<<<
+name:   \t{title}
+version: \t{version}
+author: \t{author}
+\n
+>>>> user action success <<<<
+{success}
+\n
+>>>> user action failed <<<<
+{failed}
+\n
+>>>> balance <<<<
+{balance}
+    """.format(title=title, version=version, author=author,
+               success=user_action_success, failed=user_action_failed, balance=balance)
+    return info
+
+
 if __name__ == '__main__':
-    update_config_to_aliyun()
+    print(get_project_info())

@@ -19,7 +19,8 @@ import time
 from web import Web
 from web_user import User, get_random_user, get_sequence_user
 from helper.log import setup_logging
-from helper.utils import is_today, get_proxy
+from helper.utils import is_today, get_proxy, get_project_info
+from helper.notify import InfoTrigger, Notification
 from zongheng.schdule_support import get_random_comment, get_random_chapter_id, get_random_book
 from zongheng.web_function import Login, LoginWithCookies, ReadBook, \
     CollectBook, BookComment, ChapterComment, Register, RecommendBook
@@ -49,11 +50,11 @@ app.conf.beat_schedule = {
         'schedule': crontab('10', '10, 18'),
         'args': (10,)
     },
-    'work_for_market': {
-        'task': 'main.schedule_market',
-        'schedule': crontab('30', '11, 19'),
-        'args': (10,)
-    }
+    # 'work_for_market': {
+    #     'task': 'main.schedule_market',
+    #     'schedule': crontab('30', '11, 19'),
+    #     'args': (10,)
+    # }
 }
 
 
@@ -215,6 +216,13 @@ def register_user(user_type='worker'):
     with Web(headless=False, proxy=get_proxy()) as chrome:
         Register(chrome, user_type=user_type).run()
     time.sleep(8)
+
+
+def notify_run_info():
+    info = get_project_info()
+    t = InfoTrigger()
+    n = Notification(t)
+    n.send('今日工作情况', info)
 
 
 if __name__ == '__main__':

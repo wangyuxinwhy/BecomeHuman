@@ -37,18 +37,22 @@ app.conf.timezone = "Asia/Shanghai"
 app.conf.beat_schedule = {
     'work_on_daytime': {
         'task': 'main.daily_work',
-        'schedule': crontab('10, 20, 30, 40, 50, 55', '8-22'),
+        'schedule': crontab(minute='10, 20, 30, 40, 50, 55', hour='8-22'),
         'args': ()
     },
     'work_for_book_comment': {
         'task': 'main.schedule_book_comment',
-        'schedule': crontab('10', '8, 16'),
+        'schedule': crontab(minute='10', hour='8, 16'),
         'args': (5,)
     },
     'work_for_chapter_comment': {
         'task': 'main.schedule_chapter_comment',
-        'schedule': crontab('10', '10, 18'),
+        'schedule': crontab(minute='10', hour='10, 18'),
         'args': (10,)
+    },
+    'work_for_run_info': {
+        'task': 'main.notify_run_info',
+        'schedule': crontab(minute='10', hour='23')
     },
     # 'work_for_market': {
     #     'task': 'main.schedule_market',

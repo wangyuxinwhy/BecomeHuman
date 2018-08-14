@@ -172,17 +172,15 @@ def show_info_of_user():
     return df
 
 
-def get_random_user(user_list=None):
+def get_random_user(user_type='worker'):
     """
     得到一个随机的username, 若不输入则总mongodb中取数
     :return: str
     """
     user_col = get_user_collections()
-    if not user_list:
-        user_list = list(user_col.find({}))
+    user_list = list(user_col.find({'type': user_type}))
+    if user_list:
         return str(random.choice(user_list)['username'])
-    else:
-        return str(random.choice(user_list))
 
 
 # 按照一定的算法选择一个用户，使得用户工作情况平衡

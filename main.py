@@ -20,8 +20,9 @@ from web import Web
 from web_user import User, get_random_user, get_sequence_user
 from helper.log import setup_logging
 from helper.utils import is_today, get_proxy
-from zongheng.schdule_support import get_random_comment, get_book_from_id, get_random_book_id, get_random_chapter_id
-from zongheng.web_function import Login, LoginWithCookies, ReadBook, CollectBook, BookComment, ChapterComment, Register, RecommendBook
+from zongheng.schdule_support import get_random_comment, get_random_chapter_id, get_random_book
+from zongheng.web_function import Login, LoginWithCookies, ReadBook, \
+    CollectBook, BookComment, ChapterComment, Register, RecommendBook
 from zongheng.web_function_support import FUNCTION_CHAPTER_COMMENT_CONFIG, FUNCTION_BOOK_COMMENT_CONFIG
 from zongheng.api import api_user_info
 from config import NOVEL_TITLE, NOVEL_DESCRIPTION, WEBDRIVER_HEADLESS
@@ -47,6 +48,11 @@ app.conf.beat_schedule = {
         'task': 'main.schedule_chapter_comment',
         'schedule': crontab('10', '10, 18'),
         'args': (10,)
+    },
+    'work_for_market': {
+        'task': 'main.schedule_market',
+        'schedule': crontab('30', '11, 19'),
+        'args': (10,)
     }
 }
 
@@ -58,8 +64,7 @@ def daily_work(headless=WEBDRIVER_HEADLESS):
     :return:
     """
     try:
-        # user = User(get_sequence_user())
-        user = User('18774448445')
+        user = User(get_sequence_user())
         logger.info('{} ver: {} author: {} worker: {} START DAILY WORK'
                     .format(__title__, __version__, __author__, user.nickname))
 
@@ -97,18 +102,11 @@ def daily_work(headless=WEBDRIVER_HEADLESS):
 
 
 @app.task
-def chapter_comment(user: str, book_id, chapter_id, recommend_book=NOVEL_TITLE,
-                    recommend_description=NOVEL_DESCRIPTION, proxy=None, headless=True):
+def chapter_comment(user: str, book_id, chapter_id, comment, proxy=None, headless=True):
     try:
         user = User(user)
-        logger.info('{} ver: {} author: {} worker: {} start chapter comment for "{}"'
-                    .format(__title__, __version__, __author__, user.nickname, recommend_book))
-        book = get_book_from_id(book_id)
-
-        book_name = book.get('title')
-        author = book.get('author')
-        book_id = book.get('book_id')
-        comment = get_random_comment(book_name, author, recommend_book, recommend_description)
+        logger.info('{} ver: {} author: {} worker: {} start chapter comment'
+                    .format(__title__, __version__, __author__, user.nickname))
 
         with Web(proxy=proxy, headless=headless) as chrome:
             if user.cookies:
@@ -127,19 +125,11 @@ def chapter_comment(user: str, book_id, chapter_id, recommend_book=NOVEL_TITLE,
 
 
 @app.task
-def book_comment(user, book_id, recommend_book=NOVEL_TITLE, recommend_description=NOVEL_DESCRIPTION,
-                 proxy=None, headless=True):
+def book_comment(user, book_id, title, comment, proxy=None, headless=True):
     try:
         user = User(user)
-        logger.info('{} ver: {} author: {} worker: {} start book comment for "{}"'
-                    .format(__title__, __version__, __author__, user.nickname, recommend_book))
-
-        book = get_book_from_id(book_id)
-        book_name = book.get('title')
-        author = book.get('author')
-
-        title = '《{}》前来拜访{}大大'.format(recommend_book, book.get('author'))
-        comment = get_random_comment(book_name, author, recommend_book, recommend_description)
+        logger.info('{} ver: {} author: {} worker: {} start book comment'
+                    .format(__title__, __version__, __author__, user.nickname))
 
         with Web(proxy=proxy, headless=headless) as chrome:
             if user.cookies:
@@ -162,36 +152,70 @@ def book_comment(user, book_id, recommend_book=NOVEL_TITLE, recommend_descriptio
 
 
 @app.task
-def schedule_book_comment(num):
+def schedule_market(num):
     proxy = get_proxy()
+
     for i in range(0, num):
-        user = get_random_user()
-        book_id = get_random_book_id()
+        book = get_random_book()
+        book_id = book.get('book_id')
+        book_name = book.get('title')
+        author = book.get('author')
+        title = '前来拜访{}大大, 祝大大新书大火'.format(author)
+        comment = '大大的新书{}写的太好了。不知道大大有没有兴趣加入纵横新书推广互助群：711526687，共同进步，一起成长。' \
+                  '进群就有收藏和推荐，广大书友也可以一起来玩。好书不应该被埋没！'.format(book_name)
+
+        user = get_random_user(user_type='marketer')
         minutes = np.random.randint(0, 10)
         run_delay = datetime.utcnow() + dt.timedelta(minutes=minutes)
-        book_comment.apply_async(args=[user, book_id], kwargs={'proxy': proxy}, eta=run_delay)
+        book_comment.apply_async(args=[user, book_id, title, comment], kwargs={'proxy': proxy}, eta=run_delay)
 
 
 @app.task
-def schedule_chapter_comment(num):
+def schedule_book_comment(num, recommend_book=NOVEL_TITLE, recommend_description=NOVEL_DESCRIPTION):
     proxy = get_proxy()
+
+    for i in range(0, num):
+        book = get_random_book()
+        book_id = book.get('book_id')
+        book_name = book.get('title')
+        author = book.get('author')
+        title = '《{}》前来拜访{}大大'.format(recommend_book, author)
+        comment = get_random_comment(book_name, author, recommend_book, recommend_description)
+
+        user = get_random_user()
+        minutes = np.random.randint(0, 10)
+        run_delay = datetime.utcnow() + dt.timedelta(minutes=minutes)
+        book_comment.apply_async(args=[user, book_id, title, comment], kwargs={'proxy': proxy}, eta=run_delay)
+
+
+@app.task
+def schedule_chapter_comment(num, recommend_book=NOVEL_TITLE, recommend_description=NOVEL_DESCRIPTION):
+    proxy = get_proxy()
+
     for i in range(0, num):
         user = get_random_user()
-        book_id = get_random_book_id()
+        book = get_random_book()
+        book_name = book.get('title')
+        author = book.get('author')
+        book_id = book.get('book_id')
         chapter_id = get_random_chapter_id(book_id)
+        comment = get_random_comment(book_name, author, recommend_book, recommend_description)
+
         minutes = np.random.randint(0, 10)
         run_delay = datetime.utcnow() + dt.timedelta(minutes=minutes)
-        chapter_comment.apply_async(args=[user, book_id, chapter_id], kwargs={'proxy': proxy}, eta=run_delay)
+        chapter_comment.apply_async(args=[user, book_id, chapter_id, comment], kwargs={'proxy': proxy}, eta=run_delay)
 
 
 @app.task
-def register_user():
+def register_user(user_type='worker'):
+    user_type_set = {'worker', 'marketer'}
+    if user_type not in user_type_set:
+        raise Exception('user_type Error')
+
     with Web(headless=False, proxy=get_proxy()) as chrome:
-        Register(chrome).run()
-    time.sleep(60)
+        Register(chrome, user_type=user_type).run()
+    time.sleep(8)
 
 
 if __name__ == '__main__':
-    # app.start()
-    # register_user()
-    daily_work(headless=False)
+    app.start()

@@ -410,6 +410,7 @@ class RecommendBook(WebFunction):
     def function_failed(self):
         pass
 
+
 class NewsMemberTicketComment(WebFunction):
 
     def __init__(self, web, user, config=FUNCTION_NEWS_MEMBER_TICKET_COMMENT_CONFIG):
@@ -442,10 +443,11 @@ class EnterUserHome(WebFunction):
 
 class Register(WebFunction):
 
-    def __init__(self, web, config=FUNCTION_REGISTER):
+    def __init__(self, web, config=FUNCTION_REGISTER, user_type='worker'):
         super().__init__(web, config=config)
         self.phone_num = get_phone_num()
         self.password, self.nickname = get_register_info(self.phone_num)
+        self.user_type = user_type
 
     def concrete_run(self):
         self.phone_num = get_phone_num()
@@ -504,13 +506,14 @@ class Register(WebFunction):
         self.info['info']['username'] = self.phone_num
         self.info['info']['password'] = self.password
         self.info['info']['nickname'] = self.nickname
-        user_info = {
+        insert_info = {
             'username': self.phone_num,
             'password': self.password,
-            'nickname': self.nickname
+            'nickname': self.nickname,
+            'type': self.user_type
         }
-        user_col = get_user_collections()
-        user_col.insert(user_info)
+        col = get_user_collections()
+        col.insert(insert_info)
 
 
 if __name__ == '__main__':
